@@ -25,7 +25,7 @@ func APIShortURL(echo echo.Context) error {
 		})
 	}
 
-	row, err := obj.Db.Query("call shorturl.insertURLAndGetID(?)", urlToShort.URL)
+	row, err := obj.Db.Query("call shorturl.sp_AddURLAndGetID(?)", urlToShort.URL)
 	if err != nil {
 		return err
 	}
@@ -37,9 +37,9 @@ func APIShortURL(echo echo.Context) error {
 			return err
 		}
 
-		shortCode := toBinary(id)
+		shortCode := toBase62(id)
 		shortURL := getShortURL(shortCode)
-		_, err := obj.Db.Query("call shorturl.insertShortURL(?, ?)", shortURL, id)
+		_, err := obj.Db.Query("call shorturl.sp_AddShortURL(?, ?)", shortURL, id)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func APIRedirectToURL(echo echo.Context) error {
 
 	shortURL := echo.Param("path")
 
-	row, err := obj.Db.Query("call shorturl.getOriginalURL(?)", shortURL)
+	row, err := obj.Db.Query("call shorturl.sp_GetURL(?)", shortURL)
 	if err != nil {
 		return err
 	}
@@ -88,8 +88,8 @@ func APIRedirectToURL(echo echo.Context) error {
 
 }
 
-//function for decimal to binary conversion
-func toBinary(id int64) []int64 {
+//function for decimal to base62 conversion
+func toBase62(id int64) []int64 {
 
 	var baseEquivalent []int64
 
@@ -99,15 +99,8 @@ func toBinary(id int64) []int64 {
 	}
 
 	for id >= base {
-
-		//if id < base {
-		//	baseEquivalent = append(baseEquivalent, id)
-		//	return baseEquivalent
-		//}
-
 		baseEquivalent = append(baseEquivalent, id%base)
 		id /= base
-
 	}
 
 	baseEquivalent = append(baseEquivalent, id%base)
